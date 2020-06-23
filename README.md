@@ -25,11 +25,9 @@ and then,
 python3 bot.py
 ~~~
 
-open port ```http://127.0.0.1:5000/``` in your browser
-
 Start your intro with the bot.
 
-After a complete interview, u can get a result like this:
+After a complete interview, user will recieve a json file like this:
 
     {
      "Fullname": "Raju Rastogi",
