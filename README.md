@@ -6,8 +6,8 @@ This bot can take intro of newbies joining the CODEX club.
 ## What To Do
 
 ```
-git clone https://github.com/belikesayantan/ExodusBot.git
-cd ExodusBot
+git clone https://github.com/belikesayantan/IntroBot.git
+cd IntroBot
 pip install -r requirements.txt
 ```
 
@@ -21,4 +21,8 @@ and then,
 python3 bot.py
 ~~~
 
-## Et, Voila !!
+open port ```http://127.0.0.1:5000/``` in your browser
+
+Start your intro with the bot.
+
+## et voilà !!
