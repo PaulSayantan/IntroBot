@@ -1,9 +1,8 @@
 import re
 import logging
-from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Chat, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, ConversationHandler, Filters
 from github import get_user_stats, checkAccount, save_json
-from flask import Flask, jsonify
 import base64
 from time import sleep
 
@@ -11,10 +10,9 @@ from time import sleep
 tf = open('token.txt', 'r')
 TOKEN = tf.read()
 
-NAME, EMAIL, GENDER, BRANCH, YEAR, HOSTEL, HOSTELADDR, CLUBS, GITHUB, LANG, PHOTO, BIO, QUERY, QUESTION = range(14)
+NAME, EMAIL, GENDER, BRANCH, YEAR, HOSTEL, HOSTELADDR, CLUBS, GITHUB, LANG, PHOTO, BIO, QUERY, QUESTION, UPLOAD = range(15)
 
 SaveInfo = dict()
-
 
 
 def hello(update, context):
@@ -24,15 +22,6 @@ def hello(update, context):
 def start(update, context):
     update.message.reply_text(
         '{} Please start conversation with me by typing /intro '.format(update.message.from_user.first_name))
-
-
-def whoAdmins(update, context):
-    chat = update.effective_chat
-    admins = chat.get_administrators()
-    adminsList = []
-    for admin in admins:
-        adminsList.append(admin.user.first_name + ' ' + str(admin.user.last_name) + '- @' + str(admin.user.username))
-    update.effective_message.reply_text("\n".join(adminsList))
 
 
 def getInfo(update, context):
@@ -131,7 +120,7 @@ def otherClubs(update, context):
         SaveInfo.update({'Other Clubs': None})
         update.message.reply_text('Nice!\n\nNow provide your github account link. '
                                     'A github account url looks like this:\n'
-                                    'https://github.com/belikesayantan \n'
+                                    'https://github.com/<your-username> \n'
                                     'If you don\'t provide any, you aren\'t be allowed to join CODEX. '
                                     'So, if you don\'t have an account, go create one right now! and then write it down. \n'
                                     'Click Here: https://github.com/join')
@@ -140,7 +129,7 @@ def otherClubs(update, context):
         SaveInfo.update({'Other Clubs': club})
         update.message.reply_text('Nice!\n\nNow provide your github account link. '
                                     'A github account url looks like this:\n'
-                                    'https://github.com/belikesayantan \n'
+                                    'https://github.com/<your-username> \n'
                                     'If you don\'t provide any, you aren\'t be allowed to join CODEX. '
                                     'So, if you don\'t have an account, go create one right now! and then write it down. \n'
                                     'Click Here: https://github.com/join')
@@ -242,23 +231,20 @@ def skip_photo(update, context):
 def bio(update, context):
     isQuery_kb = [['Yes', 'No']]
     user = update.message.from_user
-    filename = str(user.first_name) + str(user.last_name)
     SaveInfo.update({'Bio': update.message.text})
     update.message.reply_text('Do you have any query related to our CODEX club? \n\nYou can ask me, the admins will answer you later.', 
                                 reply_markup=ReplyKeyboardMarkup(isQuery_kb, one_time_keyboard=True, resize_keyboard=True))
-    save_json(filename, SaveInfo)
-    SaveInfo.clear
     
     return QUERY
 
 
 def skip_bio(update, context):
+    query_kb = [['Yes', 'No']]
     user = update.message.from_user
-    filename = str(user.first_name) + str(user.last_name)
     SaveInfo.update({'Bio': None})
-    update.message.reply_text('Do you have any query related to our CODEX ? \n\nYou can ask me, the admins will answer you later.')
-    save_json(filename, SaveInfo)
-    SaveInfo.clear
+    update.message.reply_text('Do you have any query related to our CODEX ?',
+                                reply_markup=ReplyKeyboardMarkup(query_kb, one_time_keyboard=True, resize_keyboard=True))
+    
     return QUERY
 
 
@@ -273,11 +259,14 @@ def isquery(update, context):
     query = update.message.text
     user = update.message.from_user
     if query != 'Yes':
+        filename = str(user.first_name) + str(user.last_name)
         SaveInfo.update({'query': None})
+        
         update.message.reply_text(
             'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
         
-        return ConversationHandler.END
+        save_json(filename, SaveInfo)
+        return UPLOAD
     else:
         update.message.reply_text('What do you wanna know ?')
         return QUESTION
@@ -285,10 +274,23 @@ def isquery(update, context):
 
 def question(update, context):
     user = update.message.from_user
+    filename = str(user.first_name) + str(user.last_name)
     SaveInfo.update({'query': update.message.text})
     update.message.reply_text('Your query has been saved successfully. \nThe admins will later get onto you, if they want.')
     update.message.reply_text(
             'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
+    save_json(filename, SaveInfo)
+    return UPLOAD
+
+
+# this function is not uploading the file , but exits the conversation correctly
+def uploadJson(update, context):
+    Chatbot = Bot
+    chat = update.effective_chat
+    user = update.message.from_user
+    filename = filename = str(user.first_name) + str(user.last_name) + '.json'
+    Chatbot.sendDocument(chat_id=chat.id, document=open(filename, 'rb'))
+    SaveInfo.clear
 
     return ConversationHandler.END
 
@@ -332,7 +334,9 @@ def bot():
 
             QUERY: [MessageHandler(Filters.regex('^(Yes|No)$'), isquery)],
 
-            QUESTION: [MessageHandler(Filters.text, question)]
+            QUESTION: [MessageHandler(Filters.text, question)],
+
+            UPLOAD: [CommandHandler('upload', uploadJson)]
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
@@ -340,30 +344,12 @@ def bot():
 
     dp.add_handler(CommandHandler('hello', hello))
     dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CommandHandler('whoadmins', whoAdmins))
 
     dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
 
 
-# --------------------FLASK DEPLOY--------------------------#
-
-
-app = Flask(__name__)
-app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = '4934002paul124'
-
-
-@app.route('/')
-def index():
-    try:
-        bot()
-    except ValueError:
-        return '<h1>Bot Running Successfully</h1>'
-
-
-# ----------------------------------------------------------#
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    bot()
