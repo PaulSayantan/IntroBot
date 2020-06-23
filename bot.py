@@ -5,28 +5,20 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, ConversationHa
 from github import get_user_stats, checkAccount, save_json
 from flask import Flask, jsonify
 import base64
+from time import sleep
 
-
-app = Flask(__name__)
-app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = '4934002paul124'
 
 tf = open('token.txt', 'r')
 TOKEN = tf.read()
 
-NAME, GENDER, BRANCH, YEAR, HOSTEL, HOSTELADDR, GITHUB, LANG, CLUBS, PHOTO, BIO = range(11)
+NAME, EMAIL, GENDER, BRANCH, YEAR, HOSTEL, HOSTELADDR, CLUBS, GITHUB, LANG, PHOTO, BIO, QUERY, QUESTION = range(14)
 
 SaveInfo = dict()
 
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
 
 def hello(update, context):
-    update.message.reply_text('Hello! {} {}'.format(update.message.from_user.first_name,
-                                                    update.message.from_user.last_name))
+    update.message.reply_text('Hello! {}'.format(update.message.from_user.first_name))
 
 
 def start(update, context):
@@ -53,11 +45,18 @@ def getInfo(update, context):
 
 
 def username(update, context):
-    gen_kb = [['Male', 'Female', 'Others']]
     user = update.message.from_user
     username = update.message.text
-    SaveInfo.update({'First': username.split(' ')[0]})
-    SaveInfo.update({'Last': username.split(' ')[1]})
+    SaveInfo.update({'Fullname': username})
+    update.message.reply_text('Nice to meet you {}. \nNow Please, provide your email-id.'.format(user.first_name))
+
+    return EMAIL
+
+
+def email(update, context):
+    gen_kb = [['Male', 'Female', 'Others']]
+    user = update.message.from_user
+    SaveInfo.update({'Email': update.message.text})
     update.message.reply_text('Nice to meet you {}. \nNow Please, provide your gender.'.format(user.first_name),
                               reply_markup=ReplyKeyboardMarkup(gen_kb, one_time_keyboard=True, resize_keyboard=True))
 
@@ -102,20 +101,29 @@ def isHostel(update, context):
         return HOSTELADDR
     else:
         SaveInfo.update({'Hostel': None})
-        return None
+        update.message.reply_text('Ok! Moving on....')
+        sleep(1)
+        update.message.reply_text('Nice!\n\nIn which other clubs you are currently a member or wanna be a member\n'
+                                'Speak Truth, the admins will eventually know, so no hiding! '
+                                'Write \'None\' if not any'
+    )
+    
+    return CLUBS
 
 
 def hostelAddr(update, context):
     hstelAddr = update.message.text
     if hstelAddr is not None:
         SaveInfo.update({'Hostel': hstelAddr})
+    update.message.reply_text('Ok! Moving on....')
+    sleep(1)
     update.message.reply_text('Nice!\n\nIn which other clubs you are currently a member or wanna be a member\n'
-                                'Speak Truth, the admins will eventually know, so no hiding!'
+                                'Speak Truth, the admins will eventually know, so no hiding! \n\n'
                                 'Write \'None\' if not any'
     )
-
+    
     return CLUBS
-
+    
 
 def otherClubs(update, context):
     club = update.message.text
@@ -141,16 +149,23 @@ def otherClubs(update, context):
 
 def github(update, context):
     lang_kb = [['C', 'Java', 'Python', 'Javascript'], ['Go', 'Ruby', 'HTML', 'PHP', 'R']]
-    name_provided = SaveInfo.get('First') +' '+SaveInfo.get('Last')
-    github_url = update.message.text
-    if 'https://github.com/' or 'github.com/' in github_url and checkAccount(name_provided, github_url) :
-        SaveInfo.update({'Github': github_url})
+    
+    name_provided = SaveInfo.get('Fullname')
+    github_url = str(update.message.text)
+    
+    if github_url.count('github.com/') == 1 and checkAccount(name_provided, github_url) :
+        SaveInfo.update({'GitHub': github_url})
+        
+        username = str((re.search(r'(\w+)$', github_url)).group(1))
         github_bio = get_user_stats(username, 'bio')
         github_comp = get_user_stats(username, 'company')
-        if github_bio == 'null':
-            update.message.reply_text('Your GitHub Bio: %s \nThat\'s Awesome!', github_bio)
-        if github_comp == 'null':
-            update.message.reply_text('You are currently working in : %s \nKeep up the good work there!', github_comp)
+        
+        if github_bio != None:
+            update.message.reply_text('Your GitHub Bio: {} \nThat\'s Awesome!'.format(github_bio))
+            sleep(1)
+        if github_comp != None:
+            update.message.reply_text('You are currently working in : {} \nKeep up the good work there!'.format(github_comp))
+            sleep(1)
         update.message.reply_text('Now, this the most important stuff. '
                                   'Which programming language you love to code mostly ? \n'
                                   'send /skip if you don\'t know any.',
@@ -160,7 +175,7 @@ def github(update, context):
 
         return LANG
     else:
-        SaveInfo.update({'Github': None})
+        SaveInfo.update({'GitHub': None})
         update.message.reply_text('You didn\'t provide your github account link or didn\'t provide your name properly when I asked you first.\n'
                                   'Why are you so dumb? \n'
                                   'That\'s fine I won\'t ask for it again.\n\n'
@@ -207,7 +222,7 @@ def photo(update, context):
     photo_file.download('photo.jpg')
     update.effective_message.reply_text('Processing your image....')
     with open("photo.jpg", "rb") as imageFile:
-        imgstr = base64.b64encode(imageFile.read())
+        imgstr = str(base64.b64encode(imageFile.read()))
         SaveInfo.update({'UserImageArray': imgstr})
     update.message.reply_text('Gorgeous! Now, tell me something about yourself, \n'
                               'send /skip if you don\'t want to.')
@@ -225,27 +240,26 @@ def skip_photo(update, context):
 
 
 def bio(update, context):
+    isQuery_kb = [['Yes', 'No']]
     user = update.message.from_user
     filename = str(user.first_name) + str(user.last_name)
     SaveInfo.update({'Bio': update.message.text})
-    update.message.reply_text(
-        'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
-    
+    update.message.reply_text('Do you have any query related to our CODEX club? \n\nYou can ask me, the admins will answer you later.', 
+                                reply_markup=ReplyKeyboardMarkup(isQuery_kb, one_time_keyboard=True, resize_keyboard=True))
     save_json(filename, SaveInfo)
     SaveInfo.clear
-    return ConversationHandler.END
+    
+    return QUERY
 
 
 def skip_bio(update, context):
     user = update.message.from_user
     filename = str(user.first_name) + str(user.last_name)
     SaveInfo.update({'Bio': None})
-    update.message.reply_text(
-        'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
-    
+    update.message.reply_text('Do you have any query related to our CODEX ? \n\nYou can ask me, the admins will answer you later.')
     save_json(filename, SaveInfo)
     SaveInfo.clear
-    return ConversationHandler.END
+    return QUERY
 
 
 def cancel(update, context):
@@ -255,11 +269,28 @@ def cancel(update, context):
     return ConversationHandler.END
 
 
-def query(update, context):
+def isquery(update, context):
+    query = update.message.text
+    user = update.message.from_user
+    if query != 'Yes':
+        SaveInfo.update({'query': None})
+        update.message.reply_text(
+            'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
+        
+        return ConversationHandler.END
+    else:
+        update.message.reply_text('What do you wanna know ?')
+        return QUESTION
+
+
+def question(update, context):
     user = update.message.from_user
     SaveInfo.update({'query': update.message.text})
+    update.message.reply_text('Your query has been saved successfully. \nThe admins will later get onto you, if they want.')
     update.message.reply_text(
-        'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
+            'It was pleasure talking with you, {}\n\nStay well, Stay Safe!! \nHave a nice day!'.format(user.first_name))
+
+    return ConversationHandler.END
 
 
 def bot():
@@ -276,6 +307,8 @@ def bot():
         states={
 
             NAME: [MessageHandler(Filters.text, username)],
+
+            EMAIL: [MessageHandler(Filters.text, email)],
 
             GENDER: [MessageHandler(Filters.regex('^(Male|Female|Others)$'), gender)],
 
@@ -295,7 +328,11 @@ def bot():
 
             PHOTO: [MessageHandler(Filters.photo, photo), CommandHandler('skip', skip_photo)],
 
-            BIO: [MessageHandler(Filters.text, bio), CommandHandler('skip', skip_bio)]
+            BIO: [MessageHandler(Filters.text, bio), CommandHandler('skip', skip_bio)],
+
+            QUERY: [MessageHandler(Filters.regex('^(Yes|No)$'), isquery)],
+
+            QUESTION: [MessageHandler(Filters.text, question)]
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
@@ -304,12 +341,19 @@ def bot():
     dp.add_handler(CommandHandler('hello', hello))
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CommandHandler('whoadmins', whoAdmins))
+
     dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
 
 
 # --------------------FLASK DEPLOY--------------------------#
+
+
+app = Flask(__name__)
+app.config['DEBUG'] = True
+app.config['SECRET_KEY'] = '4934002paul124'
+
 
 @app.route('/')
 def index():
