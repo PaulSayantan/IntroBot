@@ -1,4 +1,8 @@
 # IntroBot
+
+![Python package](https://github.com/belikesayantan/IntroBot/workflows/Python%20package/badge.svg)
+![Python application](https://github.com/belikesayantan/IntroBot/workflows/Python%20application/badge.svg)
+
 A Telegram Bot made with Python
 
 This bot can take intro of newbies joining the CODEX club.
@@ -25,4 +29,20 @@ open port ```http://127.0.0.1:5000/``` in your browser
 
 Start your intro with the bot.
 
-## et voilà !!
+After a complete interview, u can get a result like this:
+
+    {
+     "Fullname": "Raju Rastogi",
+     "Email": "rajuRajasthan@gmail.com",
+     "Gender": "Male",
+     "Branch": "ECE",
+     "Year": "1st",
+     "Hostel": null,
+     "Other Clubs": "Jaggo club, Danza club",
+     "GitHub": null,
+     "Language": null,
+     "UserImageArray": null,
+     "Bio": "I am a paranoid jerk"
+    }
+
+---
