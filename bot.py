@@ -250,7 +250,7 @@ def skip_bio(update, context):
 def cancel(update, context):
     update.message.reply_text('Bye! I hope we can talk again some day.',
                               reply_markup=ReplyKeyboardRemove())
-    SaveInfo.clear
+    SaveInfo.clear()
     return ConversationHandler.END
 
 
@@ -289,7 +289,7 @@ def uploadJson(update, context):
     user = update.message.from_user
     filename = filename = str(user.first_name) + str(user.last_name) + '.json'
     Chatbot.sendDocument(chat_id=chat.id, document=open(filename, 'rb'))
-    SaveInfo.clear
+    SaveInfo.clear()
 
     return ConversationHandler.END
 
