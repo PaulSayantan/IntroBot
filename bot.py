@@ -34,8 +34,8 @@ def getInfo(update, context):
 
 def username(update, context):
     user = update.message.from_user
-    username = update.message.text
-    SaveInfo.update({'Fullname': username})
+    name = update.message.text
+    SaveInfo.update({'Fullname': name})
     update.message.reply_text('Nice to meet you {}. \nNow Please, provide your email-id.'.format(user.first_name))
 
     return EMAIL
@@ -141,6 +141,7 @@ def github(update, context):
     name_provided = SaveInfo.get('Fullname')
     github_url = str(update.message.text)
     
+    # code here assumes that the name you provided is same as the name in your github profile
     if github_url.count('github.com/') == 1 and checkAccount(name_provided, github_url) :
         SaveInfo.update({'GitHub': github_url})
         
@@ -229,7 +230,6 @@ def skip_photo(update, context):
 
 def bio(update, context):
     isQuery_kb = [['Yes', 'No']]
-    user = update.message.from_user
     SaveInfo.update({'Bio': update.message.text})
     update.message.reply_text('Do you have any query related to our CODEX club? \n\nYou can ask me, the admins will answer you later.', 
                                 reply_markup=ReplyKeyboardMarkup(isQuery_kb, one_time_keyboard=True, resize_keyboard=True))
@@ -239,7 +239,6 @@ def bio(update, context):
 
 def skip_bio(update, context):
     query_kb = [['Yes', 'No']]
-    user = update.message.from_user
     SaveInfo.update({'Bio': None})
     update.message.reply_text('Do you have any query related to our CODEX ?',
                                 reply_markup=ReplyKeyboardMarkup(query_kb, one_time_keyboard=True, resize_keyboard=True))
