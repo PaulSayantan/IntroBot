@@ -11,7 +11,7 @@ TOKEN = tf.read()
 
 NAME, EMAIL, GENDER, BRANCH, YEAR, HOSTEL, HOSTELADDR, CLUBS, GITHUB, LANG, PHOTO, BIO, QUERY, QUESTION, UPLOAD = range(15)
 
-SaveInfo = dict()
+SaveInfo = {}
 
 
 def hello(update, context):
