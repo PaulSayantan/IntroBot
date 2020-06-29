@@ -24,7 +24,6 @@ def save_json(filename , json_data):
 
 
 def get_user_stats(Username, data):
-    Username = Username
     UserURL = 'https://api.github.com/users/{}'.format(Username)
 
     # this is data from github, we dont need all of it
