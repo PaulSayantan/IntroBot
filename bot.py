@@ -1,6 +1,5 @@
 import re
-import logging
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Chat, Bot
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, ConversationHandler, Filters
 from github import get_user_stats, checkAccount, save_json
 import base64
